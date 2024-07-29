@@ -1,7 +1,7 @@
 
 
 from app.Database.base import Base
-from sqlalchemy import Column, String, Float, Integer, Boolean, DateTime,func,ForeignKey
+from sqlalchemy import Column, String, Float, Integer, Boolean, DateTime,func,ForeignKey,Enum as sqlEnum,TIMESTAMP
 from enum import Enum
 from sqlalchemy.orm import relationship
 
@@ -41,24 +41,24 @@ class Transaction(Base):
     transaction_note =Column(String)
     transaction_datetime = Column(DateTime(timezone=True), server_default=func.now())
 
-class OrderSide(enum.Enum):
+class OrderSide(Enum):
     BUY = 'buy'
     SELL = 'sell'
 
-class OrderStatus(enum.Enum):
+class OrderStatus(Enum):
     PENDING = 'pending'
     COMPLETED = 'completed'
     CANCELED = 'canceled'
 
 
-class OrderTypes(enum.Enum):
+class OrderTypes(Enum):
     LIMIT ="limit"
     MARKET  ="market"
     STOP ="stop"
     STOPLIMIT ="stoplimit"
 
 
-class ProductType(enum.Enum):
+class ProductType(Enum):
     CNC  = 'cnc'
     INTRADAY = 'intraday'
     MARGIN = 'margin'
@@ -67,38 +67,39 @@ class ProductType(enum.Enum):
 class Order(Base):
     __tablename__ = 'orders'
     id = Column(Integer, primary_key=True)
-    aaccount_id = Column(String,nullable=False)
+    account_id = Column(String,nullable=False)
     order_id = Column(String, unique=True, nullable=False)
-    position_id = Column(String, unique=True, nullable=False)
+    position_id = Column(String, ForeignKey('positions.position_id'), nullable=False)
     stock_symbol = Column(String, nullable=False)
-    order_side = Column(Enum(OrderSide), nullable=False)
-    product_type = Column(Enum(ProductType), nullable=False, default=ProductType.CNC)
-    order_status = Column(Enum(OrderStatus), nullable=False, default=OrderStatus.PENDING)
-    order_types = Column(Enum(OrderTypes), nullable=False, default=OrderTypes.MARKET)
+    order_side = Column(sqlEnum(OrderSide), nullable=False)
+    product_type = Column(sqlEnum(ProductType), nullable=False, default=ProductType.CNC)
+    order_types = Column(sqlEnum(OrderTypes), nullable=False, default=OrderTypes.MARKET)
     is_completed = Column(Boolean, default=False)
     current_price = Column(Float, nullable=False)
+    quantity = Column(Integer, nullable=False,default=1)
     stoploss_price = Column(Float,default=0.0)
     target_price = Column(Float,default=0.0)
     is_order_modified = Column(Boolean, default=False)
     order_datetime = Column(DateTime(timezone=True), server_default=func.now())
     	
+    position = relationship('Position', back_populates='order', uselist=False)
+
 class Position(Base):
     __tablename__ = 'positions'
     id = Column(Integer, primary_key=True)
     account_id = Column(String,nullable=False)
     stock_symbol = Column(String, nullable=False)
-    order_types = Column(Enum(OrderTypes), nullable=False, default=OrderTypes.MARKET)
-    order_status = Column(Enum(OrderStatus), nullable=False, default=OrderStatus.PENDING)
+    order_types = Column(sqlEnum(OrderTypes), nullable=False, default=OrderTypes.MARKET)
+    order_status = Column(sqlEnum(OrderStatus), nullable=False, default=OrderStatus.PENDING)
     position_id = Column(String, unique=True, nullable=False)
     current_price = Column(Float, nullable=False)
     buy_average = Column(Float, nullable=False)
     buy_margin = Column(Float, nullable=False)
     buy_quantity = Column(Integer, nullable=False, default=1)
-    buy_datetime = Column(DateTime(timezone=True), server_default=func.now())
     sell_average = Column(Float, nullable=False, default=0.0)
     sell_margin = Column(Float, nullable=False, default=0.0)
     sell_quantity = Column(Integer, nullable=False, default=0)
-    sell_datetime = Column(DateTime(timezone=True))
-    product_type = Column(Enum(ProductType), nullable=False, default=ProductType.CNC)
-    pl_realized = Column(Float, nullable=False, default=0.0)
+    product_type = Column(sqlEnum(ProductType), nullable=False, default=ProductType.CNC)
+    pnl_total = Column(Float, nullable=False, default=0.0)
 
+    order = relationship('Order', back_populates='position', uselist=False)

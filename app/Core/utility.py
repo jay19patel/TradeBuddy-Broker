@@ -11,3 +11,12 @@ async def get_account_from_token(request: dict = Depends(AccessTokenBearer()),db
         return account
     except:
         return None
+    
+import hashlib
+import time
+
+def generate_unique_id(input_string: str) -> int:
+    timestamp = time.time()
+    unique_string = f"TB-{timestamp}-{input_string.capitalize()}"
+    return unique_string
+
