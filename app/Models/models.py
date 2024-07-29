@@ -50,6 +50,14 @@ class OrderStatus(enum.Enum):
     COMPLETED = 'completed'
     CANCELED = 'canceled'
 
+
+class OrderTypes(enum.Enum):
+    LIMIT ="limit"
+    MARKET  ="market"
+    STOP ="stop"
+    STOPLIMIT ="stoplimit"
+
+
 class ProductType(enum.Enum):
     CNC  = 'cnc'
     INTRADAY = 'intraday'
@@ -59,25 +67,28 @@ class ProductType(enum.Enum):
 class Order(Base):
     __tablename__ = 'orders'
     id = Column(Integer, primary_key=True)
-    account_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    aaccount_id = Column(String,nullable=False)
     order_id = Column(String, unique=True, nullable=False)
     position_id = Column(String, unique=True, nullable=False)
     stock_symbol = Column(String, nullable=False)
     order_side = Column(Enum(OrderSide), nullable=False)
     product_type = Column(Enum(ProductType), nullable=False, default=ProductType.CNC)
     order_status = Column(Enum(OrderStatus), nullable=False, default=OrderStatus.PENDING)
+    order_types = Column(Enum(OrderTypes), nullable=False, default=OrderTypes.MARKET)
     is_completed = Column(Boolean, default=False)
     current_price = Column(Float, nullable=False)
-    stoploss_price = Column(Float, nullable=False)
-    target_price = Column(Float, nullable=False)
+    stoploss_price = Column(Float,default=0.0)
+    target_price = Column(Float,default=0.0)
     is_order_modified = Column(Boolean, default=False)
     order_datetime = Column(DateTime(timezone=True), server_default=func.now())
     	
 class Position(Base):
     __tablename__ = 'positions'
     id = Column(Integer, primary_key=True)
-    account_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    account_id = Column(String,nullable=False)
     stock_symbol = Column(String, nullable=False)
+    order_types = Column(Enum(OrderTypes), nullable=False, default=OrderTypes.MARKET)
+    order_status = Column(Enum(OrderStatus), nullable=False, default=OrderStatus.PENDING)
     position_id = Column(String, unique=True, nullable=False)
     current_price = Column(Float, nullable=False)
     buy_average = Column(Float, nullable=False)
