@@ -6,13 +6,13 @@ from sqlalchemy import select
 from app.Database.base import get_db, AsyncSession
 from app.Schemas.Transaction import CreateTransaction
 from app.Core.utility import get_account_from_token
-from app.Models.models import Transaction
+from app.Models.models import Transaction,Account
 
 transaction_route =APIRouter()
 
 @transaction_route.post("/create_transaction")
 async def create_new_transaction(transaction_data:CreateTransaction,
-                                 account:any=Depends(get_account_from_token),
+                                 account:Account =Depends(get_account_from_token),
                                  db:AsyncSession =Depends(get_db)):
 
     transaction = Transaction(
@@ -49,8 +49,11 @@ async def create_new_transaction(transaction_data:CreateTransaction,
     }
 
 @transaction_route.get("/get_all_transactions")
-async def get_all_transactions(account:any=Depends(get_account_from_token),
-                                 db:AsyncSession =Depends(get_db)):
-    result = await db.execute(select(Transaction).where(Transaction.account_id==account.account_id))
-    transaction_list = result.scalars()
-    return list(transaction_list)
+async def get_all_transactions( account: Account = Depends(get_account_from_token),
+                                db:AsyncSession =Depends(get_db)):
+    # result = await db.execute(select(Transaction).where(Transaction.account_id==account.account_id))
+    # transaction_list = result.scalars()
+    # return list(transaction_list)
+
+    transaction_list = db.query(Transaction).fillter(Transaction.account_id==account.account_id)
+    return transaction_list
