@@ -4,10 +4,10 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # App
-from app.Models.models import Order, Position, Account,OrderStatus,OrderStatus
+from app.Models.models import Order, Position, Account,OrderStatus,OrderStatus,OrderTypes
 from app.Database.base import get_db
 from app.Core.utility import get_account_from_token,generate_unique_id
-from app.Schemas.Order import CreateOrder
+from app.Schemas.Order import CreateOrder,UpdateStopMarketOrder
 
 order_route = APIRouter()
 
@@ -34,7 +34,6 @@ async def create_order(
         else:
             raise HTTPException(status_code=400, detail="Order side must be 'BUY' or 'SELL' only")
     
-
         # order created
         order = Order(
             account_id=account.account_id,
@@ -51,7 +50,8 @@ async def create_order(
         )
 
         # If Position Alredy Existed then Update Position 
-        if not position :
+        if position :
+    
             total_buying_quantity = position.buy_quantity + request.quantity
             total_selling_quantity = position.sell_quantity + request.quantity
             
@@ -68,13 +68,18 @@ async def create_order(
                 pnl = (position.sell_average - position.buy_average) * position.sell_quantity
                 position.pnl_total += pnl
                 position.order_status = OrderStatus.COMPLETED
-    
+            
+            if order.order_types = OrderTypes.STOPMARKET: #Set Stoploass and Target
+                position.target =  request.current_price + (account.base_target*request.current_price)/100
+                position.stoploss =  request.current_price - (account.base_stoploss*request.current_price)/100
+                
         else:
             # Create New Position in Position not exist
             pass
     
     except Exception as e
         print(e)
+    # Bind All Models with Database
     else:
         db.add(account)
         db.add(position)
@@ -94,10 +99,20 @@ async def create_order(
             }
         }
 
-@order_route.post("/update_order")
-async def update_order():
-    pass
+@order_route.post("/update_stopmarket_order")
+async def get_order(request:UpdateStopMarketOrder,db: Session = Depends(get_db)):
+    order = await db.execute(select(Order).where(Order.order_id=request.order_id)).scalar_one_or_none()
+    request order
+
 
 @order_route.get("/get_order")
-async def get_order():
-    pass
+@order_route.get("/get_order/{position_id}")
+async def get_order(position_id: int = None, db: Session = Depends(get_db)):
+    if position_id:
+        position = db.query(Position).filter(Position.position_id == position_id).first()
+        if position is None:
+            raise HTTPException(status_code=404, detail="Position not found")
+        return position
+    else:
+        positions = db.query(Position).all()
+        return positions

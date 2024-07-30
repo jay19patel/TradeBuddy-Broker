@@ -44,6 +44,7 @@ class Transaction(Base):
 class OrderSide(Enum):
     BUY = 'buy'
     SELL = 'sell'
+    NONE = "-"
 
 class OrderStatus(Enum):
     PENDING = 'pending'
@@ -96,6 +97,7 @@ class Position(Base):
     order_types = Column(sqlEnum(OrderTypes), nullable=False, default=OrderTypes.MARKET)
     order_status = Column(sqlEnum(OrderStatus), nullable=False, default=OrderStatus.PENDING)
     order_symbol = Column(String, unique=True, nullable=False)
+    trailing_activated=Column(Boolean,default=True)
     
     current_price = Column(Float, nullable=False,default=0)
     buy_average = Column(Float, nullable=False,default=0)
