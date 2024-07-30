@@ -3,7 +3,6 @@ from sqlalchemy import Column, String, Float, Integer, Boolean, DateTime, func, 
 from enum import Enum
 from sqlalchemy.orm import relationship
 
-
 class Account(Base):
     INITIAL_BALANCE: float = 10000.00
     __tablename__ = 'accounts'
@@ -89,6 +88,7 @@ class Position(Base):
     sell_quantity = Column(Integer, nullable=False, default=0)
     product_type = Column(sqlEnum(ProductType), nullable=False, default=ProductType.CNC)
     pnl_total = Column(Float, nullable=False, default=0)
+    created_date = Column(DateTime ,server_default=func.now())
 
     # Relationships
     account = relationship('Account', back_populates='positions', lazy='selectin')

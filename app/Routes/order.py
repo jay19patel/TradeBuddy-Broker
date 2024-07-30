@@ -126,4 +126,16 @@ async def get_order(account: Account = Depends(get_account_from_token),
     result = await db.execute(
             select(Position).options(selectinload(Position.orders)).where(Position.account_id == account.account_id)
         )
-    return result.scalars().all()
+    data = result.scalars().all()
+    overview = {
+        "total_positions":len(data),
+        "open_positions":sum(1 for p in list(data) if p.order_status=="pending"),
+        "closed_positions":sum(1 for p in list(data) if p.order_status=="completed"),
+        "pnl_realized":sum(p.pnl_total for p in list(data) if p.order_status=="completed"),
+        "pnl_unrealized":sum(p.pnl_total for p in list(data) if p.order_status!="completed"),
+        "pnl_total":  sum([p.pnl_total for p in list(data)])
+
+    }
+
+    return {"data":data,
+            "overview":overview}
