@@ -38,7 +38,7 @@ async def create_order(
         order = Order(
             account_id=account.account_id,
             order_id=generate_unique_id("ORD"),
-            position_id=position_id,
+            trade_id=position_id,
             quantity=request.quantity,
             stock_symbol=request.stock_symbol,
             stock_isin=request.stock_isin,   
@@ -95,7 +95,7 @@ async def create_order(
             "payload": {
                 "account": account.account_id,
                 "order":order.order_id,
-                "position":position.position_id
+                "position":position.trade_id
             }
         }
 
@@ -107,12 +107,14 @@ async def get_order(request:UpdateStopMarketOrder,db: Session = Depends(get_db))
 
 @order_route.get("/get_order")
 @order_route.get("/get_order/{position_id}")
-async def get_order(position_id: int = None, db: Session = Depends(get_db)):
+async def get_order(position_id: int = None, 
+                    account: any = Depends(get_account_from_token),
+                    db: Session = Depends(get_db)):
     if position_id:
-        position = db.query(Position).filter(Position.position_id == position_id).first()
+        position = db.query(Position).filter(Position.trade_id == position_id).first()
         if position is None:
             raise HTTPException(status_code=404, detail="Position not found")
         return position
     else:
-        positions = db.query(Position).all()
+        position = db.query(Position).filter(Position.account_id == account.account_id)
         return positions

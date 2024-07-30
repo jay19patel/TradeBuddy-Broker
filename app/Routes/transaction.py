@@ -50,7 +50,11 @@ async def create_new_transaction(transaction_data:CreateTransaction,
 
 @transaction_route.get("/get_all_transactions")
 async def get_all_transactions(account:any=Depends(get_account_from_token),
-                                 db:AsyncSession =Depends(get_db)):
-    result = await db.execute(select(Transaction).where(Transaction.account_id==account.account_id))
-    transaction_list = result.scalars()
-    return list(transaction_list)
+                                account: any = Depends(get_account_from_token),
+                                db:AsyncSession =Depends(get_db)):
+    # result = await db.execute(select(Transaction).where(Transaction.account_id==account.account_id))
+    # transaction_list = result.scalars()
+    # return list(transaction_list)
+
+    transaction_list = db.query(Transaction).fillter(Transaction.account_id==account.account_id)
+    return transaction_list
