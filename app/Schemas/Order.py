@@ -8,11 +8,11 @@ class CreateOrder(BaseModel):
     order_side:str
     order_types:Optional[str] = None
 
-    quantity:float
-    order_price:float
+    quantity:Optional[float] = None
+    order_price:Optional[float] = None
 
-    limit_price:Optional[float] = None
-    trigger_price:Optional[float] = None
+    stoploss_price:Optional[float] = None
+    target_price:Optional[float] = None
 
 
 class UpdateStopMarketOrder(BaseModel):  

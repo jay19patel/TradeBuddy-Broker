@@ -52,17 +52,15 @@ class OrderSide(Enum):
     SELL = 'sell'
     NONE = "-"
 
-class OrderStatus(Enum):
+class PositionStatus(Enum):
     PENDING = 'pending'
     COMPLETED = 'completed'
     REJECTED = 'rejected'
 
 
 class OrderTypes(Enum):
-    LIMIT = "limit"
     MARKET = "market"
-    STOPMARKET = "stopmarket"
-    STOPLIMIT = "stoplimit"
+    SLTARGET = "sltarget"
 
 
 class ProductType(Enum):
@@ -77,7 +75,7 @@ class Position(Base):
     account_id = Column(String, ForeignKey('accounts.account_id'), nullable=False)
     stock_symbol = Column(String, nullable=False)
     order_types = Column(sqlEnum(OrderTypes), nullable=False, default=OrderTypes.MARKET)
-    order_status = Column(sqlEnum(OrderStatus), nullable=False, default=OrderStatus.PENDING)
+    order_status = Column(sqlEnum(PositionStatus), nullable=False, default=PositionStatus.PENDING)
     trailing_activated = Column(Boolean, default=True)
     current_price = Column(Float, nullable=False, default=0)
     buy_average = Column(Float, nullable=False, default=0)
@@ -106,12 +104,12 @@ class Order(Base):
     order_side = Column(sqlEnum(OrderSide), nullable=False, default=OrderSide.BUY)
     product_type = Column(sqlEnum(ProductType), nullable=False, default=ProductType.CNC)
     order_types = Column(sqlEnum(OrderTypes), nullable=False, default=OrderTypes.MARKET)
-    order_status = Column(sqlEnum(OrderStatus), nullable=False, default=OrderStatus.PENDING)
 
-    order_price = Column(Float, nullable=False)
-    quantity = Column(Integer, nullable=False, default=1)
-    limit_price = Column(Float)
-    trigger_price = Column(Float)
+    order_price = Column(Float)
+    quantity = Column(Integer)
+
+    stoploss_price = Column(Float)
+    target_price = Column(Float)
 
     order_datetime = Column(DateTime(timezone=True), server_default=func.now())  
     order_note = Column(String) 

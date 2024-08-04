@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from app.Models.models import Order, Position, Account, OrderStatus, OrderTypes
+from app.Models.models import Order, Position, Account, PositionStatus,OrderTypes
 from app.Database.base import get_db
 from app.Core.utility import get_account_from_token, generate_unique_id
 from app.Schemas.Order import CreateOrder, UpdateStopMarketOrder
@@ -16,12 +16,13 @@ async def create_order(
     db: AsyncSession = Depends(get_db)
 ):
         created_symbol = f"{request.stock_symbol}-{request.stock_isin}"
-        order_margin = request.quantity * request.order_price
+        if request.order_types =="MARKET" :
+            order_margin = request.quantity * request.order_price
 
         result = await db.execute(
                 select(Position).where(
                     Position.stock_symbol == created_symbol,
-                    Position.order_status == OrderStatus.PENDING
+                    Position.order_status == PositionStatus.PENDING
                 )
             )
         position = result.scalar_one_or_none()
@@ -31,16 +32,21 @@ async def create_order(
             created_trade_id = position.trade_id
 
         # Check account balance
-        if request.order_side == "BUY" and order_margin > account.balance:
-            raise HTTPException(status_code=400, detail="Insufficient balance to place the order")
-        if request.order_side == "BUY":
-            account.balance -= order_margin
-        elif request.order_side == "SELL":
-            account.balance += order_margin
-        else:
-            raise HTTPException(status_code=400, detail="Order side must be 'BUY' or 'SELL' only")
+        if request.order_types =="MARKET":
+            if request.order_side == "BUY" and order_margin > account.balance:
+                raise HTTPException(status_code=400, detail="Insufficient balance to place the order")
+            if request.order_side == "BUY":
+                account.balance -= order_margin
+            elif request.order_side == "SELL":
+                account.balance += order_margin
+            else:
+                raise HTTPException(status_code=400, detail="Order side must be 'BUY' or 'SELL' only")
+        
+
 
         # Create the order
+        
+
         order = Order(
             account_id=account.account_id,
             order_id=generate_unique_id("ORD"),
@@ -49,14 +55,14 @@ async def create_order(
             order_symbol=created_symbol,
             stock_isin=request.stock_isin,   
             order_side=request.order_side,
-            order_types=request.order_types,
             order_price=request.order_price,
-            limit_price=request.limit_price,
-            trigger_price=request.trigger_price
+            stoploss_price=request.stoploss_price,
+            target_price=request.target_price,
+            order_types = request.order_types
         )
         print("Order created")
 
-        if position:
+        if position and request.order_types =="MARKET" :
             # Update existing position
             if request.order_side == "BUY":
                 position.buy_quantity += request.quantity
@@ -67,17 +73,17 @@ async def create_order(
                 position.sell_margin += order_margin
                 position.sell_average = ((position.sell_average * (position.sell_quantity - request.quantity) + request.order_price * request.quantity) / position.sell_quantity)
 
-            if position.buy_quantity == position.sell_quantity and position.order_status == OrderStatus.PENDING:
+            if position.buy_quantity == position.sell_quantity and position.order_status == PositionStatus.PENDING:
                 pnl = (position.sell_average - position.buy_average) * position.sell_quantity
                 position.pnl_total += pnl
-                position.order_status = OrderStatus.COMPLETED
+                position.order_status = PositionStatus.COMPLETED
 
             if order.order_types == OrderTypes.STOPMARKET:
                 position.target = request.order_price + (account.base_target * request.order_price) / 100
                 position.stoploss = request.order_price - (account.base_stoploss * request.order_price) / 100
         else:
             # Create new position
-            if request.order_side == "BUY":
+            if request.order_side == "BUY" and request.order_types =="MARKET" :
                 position = Position(
                     trade_id= created_trade_id,
                     account_id=account.account_id,
@@ -88,7 +94,7 @@ async def create_order(
                     buy_quantity=request.quantity,
                     buy_margin=order_margin
                 )
-            if request.order_side == "SELL":
+            if request.order_side == "SELL" and request.order_types =="MARKET" :
                 position = Position(
                     trade_id=generate_unique_id("TRD"),
                     account_id=account.account_id,
@@ -120,8 +126,18 @@ async def create_order(
         }
 
 
-@order_route.get("/get_order")
-async def get_order(account: Account = Depends(get_account_from_token),
+@order_route.get("/get_position")
+async def get_position(account: Account = Depends(get_account_from_token),
+                    db: AsyncSession = Depends(get_db)):
+    data = await db.execute(select(Position).where(Position.account_id==account.account_id))
+    return data.scalars().all()
+
+
+
+    
+    
+@order_route.get("/get_trade_info")
+async def get_trade_info(account: Account = Depends(get_account_from_token),
                     db: AsyncSession = Depends(get_db)):
     result = await db.execute(
             select(Position).options(selectinload(Position.orders)).where(Position.account_id == account.account_id)
