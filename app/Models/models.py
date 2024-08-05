@@ -26,11 +26,6 @@ class Account(Base):
     description = Column(String, default="")
     created_datetime = Column(DateTime(timezone=True), server_default=func.now())
 
-    # Relationships
-    transactions = relationship('Transaction', back_populates='account')
-    orders = relationship('Order', back_populates='account')
-    positions = relationship('Position', back_populates='account')
-
 
 class Transaction(Base):
     __tablename__ = 'transactions'
@@ -48,34 +43,35 @@ class Transaction(Base):
 
 
 class OrderSide(Enum):
-    BUY = 'buy'
-    SELL = 'sell'
+    BUY = 'BUY'
+    SELL = 'SELL'
     NONE = "-"
 
 class PositionStatus(Enum):
-    PENDING = 'pending'
-    COMPLETED = 'completed'
-    REJECTED = 'rejected'
+    PENDING = 'Pending'
+    COMPLETED = 'Completed'
 
 
 class OrderTypes(Enum):
-    MARKET = "market"
-    SLTARGET = "sltarget"
+    MARKET = "Market"
+    Limit = "Limit"
+    STOPMARKET = "StopMarket"
+    STOPLIMIT = "StopLimit"
 
 
 class ProductType(Enum):
-    CNC = 'cnc'
-    INTRADAY = 'intraday'
-    MARGIN = 'margin'
+    CNC = 'CNC'
+    INTRADAY = 'INTRADAY'
+    MARGIN = 'MARGIN'
 
 class Position(Base):
     __tablename__ = 'positions'
-    id = Column(Integer, primary_key=True)
-    trade_id = Column(String, unique=True, nullable=False)
+
+    trade_id = Column(String,primary_key=True, nullable=False)
     account_id = Column(String, ForeignKey('accounts.account_id'), nullable=False)
     stock_symbol = Column(String, nullable=False)
-    order_types = Column(sqlEnum(OrderTypes), nullable=False, default=OrderTypes.MARKET)
     order_status = Column(sqlEnum(PositionStatus), nullable=False, default=PositionStatus.PENDING)
+    product_type = Column(sqlEnum(ProductType), nullable=False, default=ProductType.CNC)
     trailing_activated = Column(Boolean, default=True)
     current_price = Column(Float, nullable=False, default=0)
     buy_average = Column(Float, nullable=False, default=0)
@@ -84,18 +80,15 @@ class Position(Base):
     sell_average = Column(Float, nullable=False, default=0)
     sell_margin = Column(Float, nullable=False, default=0.0)
     sell_quantity = Column(Integer, nullable=False, default=0)
-    product_type = Column(sqlEnum(ProductType), nullable=False, default=ProductType.CNC)
     pnl_total = Column(Float, nullable=False, default=0)
     created_date = Column(DateTime ,server_default=func.now())
 
     # Relationships
-    account = relationship('Account', back_populates='positions', lazy='selectin')
-    orders = relationship('Order', back_populates='position', lazy='selectin')  # Ensure this is a one-to-many relationship if multiple orders per position
+    account = relationship('Account', back_populates='positions')
 
 class Order(Base):
     __tablename__ = 'orders'
-    id = Column(Integer, primary_key=True)
-    order_id = Column(String, unique=True, nullable=False)
+    order_id = Column(String, primary_key=True ,nullable=False)
     account_id = Column(String, ForeignKey('accounts.account_id'), nullable=False)
     trade_id = Column(String, ForeignKey('positions.trade_id'),nullable=False)
     stock_isin = Column(String, nullable=False)
