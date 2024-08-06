@@ -4,6 +4,7 @@ from enum import Enum
 from sqlalchemy.orm import relationship
 
 class Account(Base):
+    """Account model."""
     INITIAL_BALANCE: float = 10000.00
     __tablename__ = 'accounts'
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -26,8 +27,13 @@ class Account(Base):
     description = Column(String, default="")
     created_datetime = Column(DateTime(timezone=True), server_default=func.now())
 
+    transactions = relationship('Transaction', back_populates='account')
+    positions = relationship('Position', back_populates='account')
+    orders = relationship('Order', back_populates='account')
+
 
 class Transaction(Base):
+    """Transaction model."""
     __tablename__ = 'transactions'
     id = Column(Integer, primary_key=True, autoincrement=True)
     transaction_id = Column(String, unique=True, nullable=False)
@@ -43,9 +49,9 @@ class Transaction(Base):
 
 
 class OrderSide(Enum):
-    BUY = 'BUY'
-    SELL = 'SELL'
-    NONE = "-"
+    BUY = 'Buy'
+    SELL = 'Sell'
+    NONE = "None"
 
 class PositionStatus(Enum):
     PENDING = 'Pending'
@@ -54,7 +60,7 @@ class PositionStatus(Enum):
 
 class OrderTypes(Enum):
     MARKET = "Market"
-    Limit = "Limit"
+    LIMIT = "Limit"
     STOPMARKET = "StopMarket"
     STOPLIMIT = "StopLimit"
 
@@ -64,19 +70,20 @@ class CreateBy(Enum):
 
 class ProductType(Enum):
     CNC = 'CNC'
-    INTRADAY = 'INTRADAY'
-    MARGIN = 'MARGIN'
+    INTRADAY = 'Intraday'
+    MARGIN = 'Margin'
 
 class Position(Base):
+    """Position model."""
     __tablename__ = 'positions'
 
-    trade_id = Column(String,primary_key=True, nullable=False)
+    trade_id = Column(String, primary_key=True, nullable=False)
     account_id = Column(String, ForeignKey('accounts.account_id'), nullable=False)
     stock_symbol = Column(String, nullable=False)
     order_status = Column(sqlEnum(PositionStatus), nullable=False, default=PositionStatus.PENDING)
     product_type = Column(sqlEnum(ProductType), nullable=False, default=ProductType.CNC)
     trailing_activated = Column(Boolean, default=True)
-    trailing_count = Column(Integer,default=0)
+    trailing_count = Column(Integer, default=0)
     current_price = Column(Float, nullable=False, default=0)
     buy_average = Column(Float, nullable=False, default=0)
     buy_margin = Column(Float, nullable=False, default=0)
@@ -85,17 +92,17 @@ class Position(Base):
     sell_margin = Column(Float, nullable=False, default=0.0)
     sell_quantity = Column(Integer, nullable=False, default=0)
     pnl_total = Column(Float, nullable=False, default=0)
-    created_date = Column(DateTime ,server_default=func.now())
-    created_by = Column(sqlEnum(CreateBy), nullable=False, default=PositionStatus.PENDING)
+    created_date = Column(DateTime, server_default=func.now())
+    created_by = Column(sqlEnum(CreateBy), nullable=False, default=CreateBy.MENUAL)
 
-    # Relationships
     account = relationship('Account', back_populates='positions')
+    orders = relationship('Order', back_populates='position')
 
 class Order(Base):
     __tablename__ = 'orders'
-    order_id = Column(String, primary_key=True ,nullable=False)
+    order_id = Column(String, primary_key=True, nullable=False)
     account_id = Column(String, ForeignKey('accounts.account_id'), nullable=False)
-    trade_id = Column(String, ForeignKey('positions.trade_id'),nullable=False)
+    trade_id = Column(String, ForeignKey('positions.trade_id'), nullable=False)
     stock_isin = Column(String, nullable=False)
     order_symbol = Column(String, nullable=False)
 
@@ -103,8 +110,9 @@ class Order(Base):
     product_type = Column(sqlEnum(ProductType), nullable=False, default=ProductType.CNC)
     order_types = Column(sqlEnum(OrderTypes), nullable=False, default=OrderTypes.MARKET)
     
-    stop_order_hit = Column(Boolean,default=False)
+    stop_order_hit = Column(Boolean, default=False)
     order_price = Column(Float)
+    limit_price =Column(Float)
     quantity = Column(Integer)
 
     stoploss_limit_price = Column(Float)
@@ -114,7 +122,7 @@ class Order(Base):
     target_trigger_price = Column(Float)
 
     order_datetime = Column(DateTime(timezone=True), server_default=func.now())  
-    order_note = Column(String,default="-") 
+    order_note = Column(String, default="-") 
 
     # Relationships
     account = relationship('Account', back_populates='orders')

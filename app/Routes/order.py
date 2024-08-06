@@ -16,11 +16,13 @@ async def create_order(
     account: Account = Depends(get_account_from_token),
     db: AsyncSession = Depends(get_db)
 ):
+    # import pdb
+    # pdb.set_trace()
     # created_symbol = f"{request.stock_symbol}-{request.stock_isin}"
-    order_margin = request.quantity * request.order_price if request.order_types in ["LIMIT","MARKET"] else 0
+    order_margin = request.quantity * request.order_price if request.order_types in [OrderTypes.LIMIT,OrderTypes.MARKET] else 0
 
     # Check account balance for market orders
-    if request.order_types in ["LIMIT","MARKET"] and request.order_side == "BUY" and order_margin > account.balance:
+    if request.order_types in [OrderTypes.LIMIT,OrderTypes.MARKET] and request.order_side == "BUY" and order_margin > account.balance:
         raise HTTPException(status_code=400, detail="Insufficient balance to place the order")
 
     # Retrieve existing position
@@ -33,13 +35,14 @@ async def create_order(
     created_trade_id = position.trade_id if position else generate_unique_id("TRD")
 
     # Adjust account balance for market orders
-    if request.order_types in ["LIMIT","MARKET"]:
+    if request.order_types in [OrderTypes.LIMIT,OrderTypes.MARKET]:
         account.balance += order_margin if request.order_side == "SELL" else -order_margin
 
-    if position and  request.order_types in ["STOPLIMIT","STOPMARKET"]:
+    StopOrder = None
+    if position and  request.order_types in [OrderTypes.STOPLIMIT,OrderTypes.STOPMARKET]:
         StopOrder = await db.scalar(select(Order).where(
             Order.trade_id==position.trade_id,
-            Order.order_types.in_(["StopMarket", "StopLimit"])
+            Order.order_types.in_([OrderTypes.STOPLIMIT,OrderTypes.STOPMARKET]),
             Order.stop_order_hit == False
         ))
         if StopOrder:
@@ -54,19 +57,24 @@ async def create_order(
         order = Order(
         account_id=account.account_id,
         order_id=generate_unique_id("ORD"),
+        trade_id = created_trade_id,
+        order_symbol =request.stock_symbol,
+        stock_isin = request.stock_isin,
+        order_side = request.order_side,
+        order_types = request.order_types,
         product_type = request.product_type,
         stop_order_hit = request.stop_order_hit,
         quantity = request.quantity,
         order_price = request.order_price,
+        limit_price = request.order_price,
         stoploss_limit_price = request.stoploss_limit_price,
         stoploss_trigger_price = request.stoploss_trigger_price,
         target_limit_price = request.target_limit_price,
         target_trigger_price = request.target_limit_price,
-        created_by = request.created_by,
         order_note = request.order_note
     )
 
-    if position and request.order_types in ["LIMIT","MARKET"]:
+    if position and request.order_types in [OrderTypes.LIMIT,OrderTypes.MARKET]:
         # Update existing position
         if request.order_side == "BUY":
             position.buy_quantity += request.quantity
@@ -90,23 +98,21 @@ async def create_order(
             position.target = request.order_price + (account.base_target * request.order_price) / 100
             position.stoploss = request.order_price - (account.base_stoploss * request.order_price) / 100
 
-    else:
-        # Create new position
+    if not position :
         position_data = {
             "trade_id": created_trade_id,
             "account_id": account.account_id,
             "stock_symbol": request.stock_symbol,
-            "order_types": request.order_types,
             "current_price": request.order_price,
             "created_by": request.created_by
         }
-        if request.order_side == "BUY" and request.order_types == "MARKET":
+        if request.order_side == "BUY" and request.order_types == OrderTypes.MARKET:
             position_data.update({
                 "buy_average": request.order_price,
                 "buy_quantity": request.quantity,
                 "buy_margin": order_margin
             })
-        elif request.order_side == "SELL" and request.order_types == "MARKET":
+        elif request.order_side == "SELL" and request.order_types ==  OrderTypes.MARKET:
             position_data.update({
                 "sell_average": request.order_price,
                 "sell_quantity": request.quantity,
@@ -135,14 +141,14 @@ async def create_order(
 @order_route.get("/get_orders/")
 @order_route.get("/get_orders/{position_id}/")
 async def get_position(
-    position_id: int = Path(None),
+    position_id: str = None,
     account: Account = Depends(get_account_from_token),
                     db: AsyncSession = Depends(get_db)):
     query = select(Order).where(Order.account_id == account.account_id)
     if position_id:
         query = query.where(
             Order.account_id == account.account_id,
-            Order.position_id == position_id)
+            Order.trade_id == position_id)
     data = await db.execute(query)
     return data.scalars().all()
 
@@ -157,17 +163,17 @@ async def get_trade_info(trade_today:bool = True,
         current_date = date.today()
         query = select(Position).where(
             Position.account_id == account.account_id,
-            Position.datetime >= current_date,
-            Position.position_status == "Pending"
+            Position.created_date >= current_date,
+            Position.order_status == PositionStatus.PENDING
         )
     result = await db.execute(query)
     data = result.scalars().all()
     overview = {
         "total_positions":len(data),
-        "open_positions":sum(1 for p in list(data) if p.order_status=="pending"),
-        "closed_positions":sum(1 for p in list(data) if p.order_status=="completed"),
-        "pnl_realized":sum(p.pnl_total for p in list(data) if p.order_status=="completed"),
-        "pnl_unrealized":sum(p.pnl_total for p in list(data) if p.order_status!="completed"),
+        "open_positions":sum(1 for p in list(data) if p.order_status==PositionStatus.PENDING),
+        "closed_positions":sum(1 for p in list(data) if p.order_status==PositionStatus.COMPLETED),
+        "pnl_realized":sum(p.pnl_total for p in list(data) if p.order_status==PositionStatus.COMPLETED),
+        "pnl_unrealized":sum(p.pnl_total for p in list(data) if p.order_status!=PositionStatus.COMPLETED),
         "pnl_total":  sum([p.pnl_total for p in list(data)])
 
     }
