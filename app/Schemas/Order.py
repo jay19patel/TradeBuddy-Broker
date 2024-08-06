@@ -11,7 +11,7 @@ class CreateOrder(BaseModel):
     product_type:Optional[str] = None
 
     stop_order_hit:Optional[bool] = None
-    quantity:Optional[float] = None
+    quantity:Optional[int] = None
     order_price:Optional[float] = None
 
     stoploss_limit_price = Optional[float] = None
@@ -20,7 +20,8 @@ class CreateOrder(BaseModel):
     target_limit_price = Optional[float] = None
     target_trigger_price = Optional[float] = None
     
-    created_by:Optional[float] = None
+    created_by:Optional[str] = None
+    order_note:Optional[str] = None
 
 
 class UpdateStopMarketOrder(BaseModel):  

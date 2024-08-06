@@ -114,7 +114,7 @@ class Order(Base):
     target_trigger_price = Column(Float)
 
     order_datetime = Column(DateTime(timezone=True), server_default=func.now())  
-    order_note = Column(String) 
+    order_note = Column(String,default="-")
 
     # Relationships
     account = relationship('Account', back_populates='orders')

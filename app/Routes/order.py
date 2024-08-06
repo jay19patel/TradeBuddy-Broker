@@ -43,8 +43,10 @@ async def create_order(
             Order.stop_order_hit == False
         ))
         if StopOrder:
-            StopOrder.stoploss_price = request.stoploss_price
-            StopOrder.target_price = request.target_price
+            StopOrder.stoploss_limit_price = request.stoploss_limit_price
+            StopOrder.stoploss_trigger_price = request.stoploss_trigger_price
+            StopOrder.target_limit_price = request.target_limit_price
+            StopOrder.target_trigger_price = request.target_trigger_price
             
      
     # Create the order
@@ -52,15 +54,16 @@ async def create_order(
         order = Order(
         account_id=account.account_id,
         order_id=generate_unique_id("ORD"),
-        quantity=request.quantity,
-        trade_id=created_trade_id,
-        order_symbol=request.stock_symbol,
-        stock_isin=request.stock_isin,
-        order_side=request.order_side,
-        order_price=request.order_price,
-        stoploss_price=request.stoploss_price,
-        target_price=request.target_price,
-        order_types=request.order_types
+        product_type = request.product_type,
+        stop_order_hit = request.stop_order_hit,
+        quantity = request.quantity,
+        order_price = request.order_price,
+        stoploss_limit_price = request.stoploss_limit_price,
+        stoploss_trigger_price = request.stoploss_trigger_price,
+        target_limit_price = request.target_limit_price,
+        target_trigger_price = request.target_limit_price,
+        created_by = request.created_by,
+        order_note = request.order_note
     )
 
     if position and request.order_types in ["LIMIT","MARKET"]:
@@ -95,6 +98,7 @@ async def create_order(
             "stock_symbol": request.stock_symbol,
             "order_types": request.order_types,
             "current_price": request.order_price,
+            "created_by": request.created_by
         }
         if request.order_side == "BUY" and request.order_types == "MARKET":
             position_data.update({
