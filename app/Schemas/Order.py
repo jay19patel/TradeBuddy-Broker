@@ -6,7 +6,7 @@ class CreateOrder(BaseModel):
     stock_symbol:str
     stock_isin:str
     order_side:str
-    order_types:Optional[str] = None
+    order_types:str
 
     quantity:Optional[float] = None
     order_price:Optional[float] = None

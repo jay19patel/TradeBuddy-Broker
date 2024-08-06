@@ -40,10 +40,12 @@ async def create_order(
         StopOrder = await db.scalar(select(Order).where(
             Order.trade_id==position.trade_id,
             Order.order_types.in_(["StopMarket", "StopLimit"])
+            Order.stop_order_hit == False
         ))
         if StopOrder:
             StopOrder.stoploss_price = request.stoploss_price
             StopOrder.target_price = request.target_price
+            
      
     # Create the order
     if not StopOrder:
