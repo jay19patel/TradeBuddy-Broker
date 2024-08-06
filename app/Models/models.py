@@ -86,7 +86,7 @@ class Position(Base):
     sell_quantity = Column(Integer, nullable=False, default=0)
     pnl_total = Column(Float, nullable=False, default=0)
     created_date = Column(DateTime ,server_default=func.now())
-    cratedby = Column(sqlEnum(CreateBy), nullable=False, default=PositionStatus.PENDING)
+    created_by = Column(sqlEnum(CreateBy), nullable=False, default=PositionStatus.PENDING)
 
     # Relationships
     account = relationship('Account', back_populates='positions')

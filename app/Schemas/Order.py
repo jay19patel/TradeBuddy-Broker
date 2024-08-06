@@ -8,9 +8,9 @@ class CreateOrder(BaseModel):
 
     order_side:str
     order_types:str
-    product_type:str = Optional[str] = None
+    product_type:Optional[str] = None
 
-    stop_order_hit:bool=Optional[bool] = None
+    stop_order_hit:Optional[bool] = None
     quantity:Optional[float] = None
     order_price:Optional[float] = None
 
@@ -20,7 +20,7 @@ class CreateOrder(BaseModel):
     target_limit_price = Optional[float] = None
     target_trigger_price = Optional[float] = None
     
-    cratedby:Optional[float] = None
+    created_by:Optional[float] = None
 
 
 class UpdateStopMarketOrder(BaseModel):  
