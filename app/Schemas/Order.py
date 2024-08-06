@@ -5,9 +5,12 @@ from typing import Optional
 class CreateOrder(BaseModel):
     stock_symbol:str
     stock_isin:str
+
     order_side:str
     order_types:str
+    product_type:str = Optional[str] = None
 
+    stop_order_hit:bool=Optional[bool] = None
     quantity:Optional[float] = None
     order_price:Optional[float] = None
 

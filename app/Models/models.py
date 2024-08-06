@@ -102,6 +102,7 @@ class Order(Base):
     order_side = Column(sqlEnum(OrderSide), nullable=False, default=OrderSide.NONE)
     product_type = Column(sqlEnum(ProductType), nullable=False, default=ProductType.CNC)
     order_types = Column(sqlEnum(OrderTypes), nullable=False, default=OrderTypes.MARKET)
+    
     stop_order_hit = Column(Boolean,default=False)
     order_price = Column(Float)
     quantity = Column(Integer)
