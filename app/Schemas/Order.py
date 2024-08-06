@@ -11,8 +11,12 @@ class CreateOrder(BaseModel):
     quantity:Optional[float] = None
     order_price:Optional[float] = None
 
-    stoploss_price:Optional[float] = None
-    target_price:Optional[float] = None
+    stoploss_limit_price = Optional[float] = None
+    stoploss_trigger_price =Optional[float] = None
+
+    target_limit_price = Optional[float] = None
+    target_trigger_price = Optional[float] = None
+    
     cratedby:Optional[float] = None
 
 

@@ -76,6 +76,7 @@ class Position(Base):
     order_status = Column(sqlEnum(PositionStatus), nullable=False, default=PositionStatus.PENDING)
     product_type = Column(sqlEnum(ProductType), nullable=False, default=ProductType.CNC)
     trailing_activated = Column(Boolean, default=True)
+    trailing_count = Column(Integer,default=0)
     current_price = Column(Float, nullable=False, default=0)
     buy_average = Column(Float, nullable=False, default=0)
     buy_margin = Column(Float, nullable=False, default=0)
@@ -105,8 +106,11 @@ class Order(Base):
     order_price = Column(Float)
     quantity = Column(Integer)
 
-    stoploss_price = Column(Float)
-    target_price = Column(Float)
+    stoploss_limit_price = Column(Float)
+    stoploss_trigger_price = Column(Float)
+
+    target_limit_price = Column(Float)
+    target_trigger_price = Column(Float)
 
     order_datetime = Column(DateTime(timezone=True), server_default=func.now())  
     order_note = Column(String) 
