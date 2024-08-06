@@ -19,9 +19,8 @@ class CreateOrder(BaseModel):
 
     target_limit_price = Optional[float] = None
     target_trigger_price = Optional[float] = None
-    
-    created_by:Optional[str] = None
-    order_note:Optional[str] = None
+    order_note = Optional[str] = None
+    cratedby:Optional[float] = None
 
 
 class UpdateStopMarketOrder(BaseModel):  
