@@ -13,6 +13,7 @@ class CreateOrder(BaseModel):
 
     stoploss_price:Optional[float] = None
     target_price:Optional[float] = None
+    cratedby:Optional[float] = None
 
 
 class UpdateStopMarketOrder(BaseModel):  

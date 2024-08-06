@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter,Path, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -6,19 +6,21 @@ from app.Models.models import Order, Position, Account, PositionStatus,OrderType
 from app.Database.base import get_db
 from app.Core.utility import get_account_from_token, generate_unique_id
 from app.Schemas.Order import CreateOrder, UpdateStopMarketOrder
-
+from datetime import date
 order_route = APIRouter()
 
+
+@order_route.post("/create_order")
 async def create_order(
     request: CreateOrder,
     account: Account = Depends(get_account_from_token),
     db: AsyncSession = Depends(get_db)
 ):
     # created_symbol = f"{request.stock_symbol}-{request.stock_isin}"
-    order_margin = request.quantity * request.order_price if request.order_types == "MARKET" else 0
+    order_margin = request.quantity * request.order_price if request.order_types in ["LIMIT","MARKET"] else 0
 
     # Check account balance for market orders
-    if request.order_types == "MARKET" and request.order_side == "BUY" and order_margin > account.balance:
+    if request.order_types in ["LIMIT","MARKET"] and request.order_side == "BUY" and order_margin > account.balance:
         raise HTTPException(status_code=400, detail="Insufficient balance to place the order")
 
     # Retrieve existing position
@@ -31,11 +33,21 @@ async def create_order(
     created_trade_id = position.trade_id if position else generate_unique_id("TRD")
 
     # Adjust account balance for market orders
-    if request.order_types == "MARKET":
+    if request.order_types in ["LIMIT","MARKET"]:
         account.balance += order_margin if request.order_side == "SELL" else -order_margin
 
+    if position and  request.order_types in ["STOPLIMIT","STOPMARKET"]:
+        StopOrder = await db.scalar(select(Order).where(
+            Order.trade_id==position.trade_id,
+            Order.order_types.in_(["StopMarket", "StopLimit"])
+        ))
+        if StopOrder:
+            StopOrder.stoploss_price = request.stoploss_price
+            StopOrder.target_price = request.target_price
+     
     # Create the order
-    order = Order(
+    if not StopOrder:
+        order = Order(
         account_id=account.account_id,
         order_id=generate_unique_id("ORD"),
         quantity=request.quantity,
@@ -49,7 +61,7 @@ async def create_order(
         order_types=request.order_types
     )
 
-    if position and request.order_types == "MARKET":
+    if position and request.order_types in ["LIMIT","MARKET"]:
         # Update existing position
         if request.order_side == "BUY":
             position.buy_quantity += request.quantity
@@ -114,22 +126,35 @@ async def create_order(
     }
 
 
-@order_route.get("/get_position")
-async def get_position(account: Account = Depends(get_account_from_token),
+@order_route.get("/get_orders/")
+@order_route.get("/get_orders/{position_id}/")
+async def get_position(
+    position_id: int = Path(None),
+    account: Account = Depends(get_account_from_token),
                     db: AsyncSession = Depends(get_db)):
-    data = await db.execute(select(Position).where(Position.account_id==account.account_id))
+    query = select(Order).where(Order.account_id == account.account_id)
+    if position_id:
+        query = query.where(
+            Order.account_id == account.account_id,
+            Order.position_id == position_id)
+    data = await db.execute(query)
     return data.scalars().all()
 
 
 
-    
-    
-@order_route.get("/get_trade_info")
-async def get_trade_info(account: Account = Depends(get_account_from_token),
+@order_route.get("/get_trades")
+async def get_trade_info(trade_today:bool = True,
+                    account: Account = Depends(get_account_from_token),
                     db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-            select(Position).options(selectinload(Position.orders)).where(Position.account_id == account.account_id)
+    query = select(Position).where(Position.account_id==account.account_id)
+    if trade_today:
+        current_date = date.today()
+        query = select(Position).where(
+            Position.account_id == account.account_id,
+            Position.datetime >= current_date,
+            Position.position_status == "Pending"
         )
+    result = await db.execute(query)
     data = result.scalars().all()
     overview = {
         "total_positions":len(data),
