@@ -16,8 +16,7 @@ async def create_order(
     account: Account = Depends(get_account_from_token),
     db: AsyncSession = Depends(get_db)
 ):
-    # import pdb
-    # pdb.set_trace()
+
     # created_symbol = f"{request.stock_symbol}-{request.stock_isin}"
     order_margin = request.quantity * request.order_price if request.order_types in [OrderTypes.LIMIT,OrderTypes.MARKET] else 0
 
@@ -58,7 +57,7 @@ async def create_order(
         account_id=account.account_id,
         order_id=generate_unique_id("ORD"),
         trade_id = created_trade_id,
-        order_symbol =request.stock_symbol,
+        stock_symbol =request.stock_symbol,
         stock_isin = request.stock_isin,
         order_side = request.order_side,
         order_types = request.order_types,

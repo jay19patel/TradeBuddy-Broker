@@ -6,13 +6,14 @@ class CreateOrder(BaseModel):
     stock_isin: str
 
     order_side: Optional[str] = None
-    order_types: str
+    order_types: Optional[str] = None
     product_type: Optional[str] = None
 
-    stop_order_hit: Optional[bool] = None
     quantity: Optional[int] = None
     order_price: Optional[float] = None
     limit_price: Optional[float] = None
+
+    stop_order_hit: Optional[bool] = None
 
     stoploss_limit_price: Optional[float] = None
     stoploss_trigger_price: Optional[float] = None
@@ -23,8 +24,3 @@ class CreateOrder(BaseModel):
     order_note: Optional[str] = None
     created_by: Optional[str] = None 
 
-
-class UpdateStopMarketOrder(BaseModel):
-    order_id: int  # order_id ko int mein badla
-    stoploss: float
-    target: float
