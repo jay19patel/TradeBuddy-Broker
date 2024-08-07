@@ -85,10 +85,10 @@ async def create_order(
             raise HTTPException(status_code=400,detail="order side is not valied formate")
         
 
-        if position.buy_quantity == position.sell_quantity and position.order_status == PositionStatus.PENDING:
+        if position.buy_quantity == position.sell_quantity and position.position_status == PositionStatus.PENDING:
             pnl = (position.sell_average - position.buy_average) * position.sell_quantity
             position.pnl_total += pnl
-            position.order_status = PositionStatus.COMPLETED
+            position.position_status = PositionStatus.COMPLETED
 
 
         create_order.update({
