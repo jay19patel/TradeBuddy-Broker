@@ -3,19 +3,25 @@ from typing import Optional
 
 
 class CreateOrder(BaseModel):
-    stock_symbol:str
-    stock_isin:str
-    order_side:str
-    order_types:Optional[str] = None
+    stock_symbol: str
+    stock_isin: str
 
-    quantity:float
-    order_price:float
+    order_side: Optional[str] = None
+    order_types: Optional[str] = None
+    product_type: Optional[str] = None
 
-    limit_price:Optional[float] = None
-    trigger_price:Optional[float] = None
+    quantity: Optional[int] = None
+    trigger_price: Optional[float] = None
+    limit_price: Optional[float] = None
 
+    stop_order_hit: Optional[bool] = None
 
-class UpdateStopMarketOrder(BaseModel):  
-    order_id:float
-    stoploss:float
-    target:float
+    stoploss_limit_price: Optional[float] = None
+    stoploss_trigger_price: Optional[float] = None
+
+    target_limit_price: Optional[float] = None
+    target_trigger_price: Optional[float] = None
+
+    note: Optional[str] = None
+    created_by: Optional[str] = None 
+
