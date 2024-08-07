@@ -77,7 +77,7 @@ class Position(Base):
     """Position model."""
     __tablename__ = 'positions'
 
-    trade_id = Column(String, primary_key=True, nullable=False)
+    position_id = Column(String, primary_key=True, nullable=False)
     account_id = Column(String, ForeignKey('accounts.account_id'), nullable=False)
     stock_symbol = Column(String, nullable=False)
     order_status = Column(sqlEnum(PositionStatus), nullable=False, default=PositionStatus.PENDING)
@@ -102,7 +102,7 @@ class Order(Base):
     __tablename__ = 'orders'
     order_id = Column(String, primary_key=True, nullable=False)
     account_id = Column(String, ForeignKey('accounts.account_id'), nullable=False)
-    trade_id = Column(String, ForeignKey('positions.trade_id'), nullable=False)
+    position_id = Column(String, ForeignKey('positions.position_id'), nullable=False)
     stock_isin = Column(String, nullable=False)
     stock_symbol = Column(String, nullable=False)
 

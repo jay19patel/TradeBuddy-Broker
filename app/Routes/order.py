@@ -31,7 +31,7 @@ async def create_order(
     ))
 
     # Determine trade ID
-    created_trade_id = position.trade_id if position else generate_unique_id("TRD")
+    created_position_id = position.position_id if position else generate_unique_id("TRD")
 
     # Adjust account balance for market orders
     if request.order_types in [OrderTypes.LIMIT,OrderTypes.MARKET]:
@@ -40,7 +40,7 @@ async def create_order(
     StopOrder = None
     if position and  request.order_types in [OrderTypes.STOPLIMIT,OrderTypes.STOPMARKET]:
         StopOrder = await db.scalar(select(Order).where(
-            Order.trade_id==position.trade_id,
+            Order.position_id==position.position_id,
             Order.order_types.in_([OrderTypes.STOPLIMIT,OrderTypes.STOPMARKET]),
             Order.stop_order_hit == False
         ))
@@ -56,7 +56,7 @@ async def create_order(
         order = Order(
         account_id=account.account_id,
         order_id=generate_unique_id("ORD"),
-        trade_id = created_trade_id,
+        position_id = created_position_id,
         stock_symbol =request.stock_symbol,
         stock_isin = request.stock_isin,
         order_side = request.order_side,
@@ -99,7 +99,7 @@ async def create_order(
 
     if not position :
         position_data = {
-            "trade_id": created_trade_id,
+            "position_id": created_position_id,
             "account_id": account.account_id,
             "stock_symbol": request.stock_symbol,
             "current_price": request.order_price,
@@ -132,14 +132,14 @@ async def create_order(
         "payload": {
             "account": account.account_id,
             "order": order.order_id,
-            "position": position.trade_id
+            "position": position.position_id
         }
     }
 
 
-@order_route.get("/get_orders/")
-@order_route.get("/get_orders/{position_id}/")
-async def get_position(
+@order_route.get("/orders/")
+@order_route.get("/orders/{position_id}/")
+async def get_orders(
     position_id: str = None,
     account: Account = Depends(get_account_from_token),
                     db: AsyncSession = Depends(get_db)):
@@ -147,14 +147,29 @@ async def get_position(
     if position_id:
         query = query.where(
             Order.account_id == account.account_id,
-            Order.trade_id == position_id)
+            Order.position_id == position_id)
+    data = await db.execute(query)
+    return data.scalars().all()
+
+
+@order_route.get("/position/{position_id}/")
+async def get_single_position(
+    position_id: str = None,
+    account: Account = Depends(get_account_from_token),
+    db: AsyncSession = Depends(get_db)):
+
+    query = select(Position).where(Position.account_id == account.account_id,Position.position_id = position_id)
+    if position_id:
+        query = query.where(
+            Order.account_id == account.account_id,
+            Order.position_id == position_id)
     data = await db.execute(query)
     return data.scalars().all()
 
 
 
-@order_route.get("/get_trades")
-async def get_trade_info(trade_today:bool = True,
+@order_route.get("/positions")
+async def get_positions(trade_today:bool = True,
                     account: Account = Depends(get_account_from_token),
                     db: AsyncSession = Depends(get_db)):
     query = select(Position).where(Position.account_id==account.account_id)
@@ -174,7 +189,6 @@ async def get_trade_info(trade_today:bool = True,
         "pnl_realized":sum(p.pnl_total for p in list(data) if p.order_status==PositionStatus.COMPLETED),
         "pnl_unrealized":sum(p.pnl_total for p in list(data) if p.order_status!=PositionStatus.COMPLETED),
         "pnl_total":  sum([p.pnl_total for p in list(data)])
-
     }
 
     return {"data":data,
