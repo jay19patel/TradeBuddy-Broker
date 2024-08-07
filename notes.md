@@ -18,33 +18,33 @@ fastapi dev run.py
   "stock_symbol": "SBIIN",
   "stock_isin": "123",
   "order_side": "BUY",
-  "order_types": "MARKET",
+  "order_types": "LIMIT",
   "product_type": "CNC",
   "quantity": 10,
-  "order_price": 120,
-  "order_note": "Test",
+  "trigger_price": 120.5,
+  "limit_price":120.0,
+  "note": "Test",
   "created_by": "MENUAL"
 }
-
 
 ```
 
 
 
-
-```json [SET STOPLOSS TARGET]
-
+```json [STOPLIMIT]
 {
   "stock_symbol": "SBIIN",
   "stock_isin": "123",
-  "order_side": "BUY",
-  "order_types": "MARKET",
+  "order_types": "STOPLIMIT",
   "product_type": "CNC",
-  "quantity": 10,
-  "order_price": 120,
-  "order_note": "Test",
+  "stoploss_limit_price":100,
+  "stoploss_trigger_price":100,
+  "target_limit_price":200,
+  "target_trigger_price":200,
+  "note": "Test",
   "created_by": "MENUAL"
 }
 
-
 ```
+
+

@@ -14,9 +14,12 @@ async def get_account_from_token(request: dict = Depends(AccessTokenBearer()),db
     
 import random
 import time
+import time
 
-def generate_unique_id(input_string: str) -> int:
-    timestamp = time.time()/10000000+19
-    unique_string = f"TB-{timestamp}-{input_string.upper()}"
+def generate_unique_id(input_string: str) -> str:
+    timestamp = time.time() + 19
+    timestamp_str = str(timestamp).replace('.', '')  # Remove the dot from the timestamp string
+    unique_string = f"TB-{timestamp_str}-{input_string.upper()}"
     return unique_string
+
 

@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Optional
 
+
 class CreateOrder(BaseModel):
     stock_symbol: str
     stock_isin: str
@@ -10,7 +11,7 @@ class CreateOrder(BaseModel):
     product_type: Optional[str] = None
 
     quantity: Optional[int] = None
-    order_price: Optional[float] = None
+    trigger_price: Optional[float] = None
     limit_price: Optional[float] = None
 
     stop_order_hit: Optional[bool] = None
@@ -21,6 +22,6 @@ class CreateOrder(BaseModel):
     target_limit_price: Optional[float] = None
     target_trigger_price: Optional[float] = None
 
-    order_note: Optional[str] = None
+    note: Optional[str] = None
     created_by: Optional[str] = None 
 
