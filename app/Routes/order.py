@@ -146,12 +146,7 @@ async def create_order(
         }
     }
 
-
-
-
-   
-
-@order_route.get("/orders/")
+@order_route.get("/orders")
 @order_route.get("/orders/{position_id}/")
 async def get_orders(
     position_id: str = None,
@@ -162,6 +157,18 @@ async def get_orders(
         query = query.where(
             Order.account_id == account.account_id,
             Order.position_id == position_id)
+    data = await db.execute(query)
+    return data.scalars().all()
+
+@order_route.get("/open_orders")
+async def get_open_order(
+            account: Account = Depends(get_account_from_token),
+            db: AsyncSession = Depends(get_db)):
+    
+    query = select(Order).where(Order.account_id == account.account_id
+                                ,Order.order_types == OrderTypes.STOPLIMIT
+                                ,Order.stop_order_hit == False
+                                )
     data = await db.execute(query)
     return data.scalars().all()
 
