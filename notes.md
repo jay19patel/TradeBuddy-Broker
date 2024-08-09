@@ -35,6 +35,7 @@ fastapi dev run.py
 {
   "stock_symbol": "SBIIN",
   "stock_isin": "123",
+  "order_side":"BUY",
   "order_types": "STOPLIMIT",
   "product_type": "CNC",
   "stoploss_limit_price":100,

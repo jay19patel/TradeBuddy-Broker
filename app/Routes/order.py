@@ -112,7 +112,7 @@ async def create_order(
 
         else:
             create_order.update({
-                # "order_side":"OTHER",
+                "order_side":request.order_side,
                 "stoploss_limit_price":request.stoploss_limit_price,
                 "stoploss_trigger_price":request.stoploss_trigger_price,
                 "target_limit_price":request.target_limit_price,
